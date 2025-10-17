@@ -56,6 +56,10 @@ class ComposerStaticInitefde9833fcaa12ff1811e00a7a077255
             'Psr\\Container\\' => 14,
             'Psr\\Cache\\' => 10,
         ),
+        'A' => 
+        array (
+            'App\\' => 4,
+        ),
     );
 
     public static $prefixDirsPsr4 = array (
@@ -170,6 +174,10 @@ class ComposerStaticInitefde9833fcaa12ff1811e00a7a077255
         'Psr\\Cache\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/cache/src',
+        ),
+        'App\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src',
         ),
     );
 

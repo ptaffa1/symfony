@@ -1,4 +1,5 @@
 <?php
+// src/Controller/HelloController.php
 namespace App\Controller;
 
 use Symfony\Component\HttpFoundation\Request;
@@ -8,7 +9,7 @@ class HelloController
 {
     public function home(Request $request): Response
     {
-        return new Response('Welcome to Miny symfony');
+        return new Response('Welcome to Mini Symfony');
     }
 
     public function hello(Request $request, string $name): Response

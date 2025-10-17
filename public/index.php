@@ -8,8 +8,8 @@ use Symfony\Component\HttpFoundation\Response;//Request/Response (HttpFoundation
 use Symfony\Component\Routing\RequestContext;//RequestContext (info de la request para el router: método, host, esquema, path).
 use Symfony\Component\Routing\Matcher\UrlMatcher;//UrlMatcher (el que matchea la URL contra la RouteCollection)
 use Symfony\Component\Routing\Exception\ResourceNotFoundException; // opcional: para usar el nombre corto en el catch
-use Twig\Environment;
-use Twig\Loader\FilesystemLoader;//para cargar las plantillas desde la carpeta templates/, y Environment para configurar Twig.
+use Symfony\Component\HttpKernel\Controller\ControllerResolver;
+use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
 
 
 //1) Construye la Request a partir de las superglobales PHP
@@ -28,56 +28,27 @@ $context->fromRequest($request);//fromRequest($request) lo rellena con los datos
 //4) Matchear la URL entrante
 $matcher = new UrlMatcher($routes, $context);//Creás el “emparejador” de URLs, con tus rutas y el contexto actual.
 
+// resolvers de HttpKernel
+$controllerResolver = new ControllerResolver();
+$argumentResolver   = new ArgumentResolver();
 try {
-    $parameters = $matcher->match($request->getPathInfo()); //$matcher->match(pathInfo) intenta encontrar qué ruta coincide con el path
-    // $parameters incluye: _route, _controller y variables (p.ej. 'name')//Si encuentra:$parameters será un array con:
-    //'_route': el nombre de la ruta (ej. 'hello').
-    //'_controller': el controlador que definiste (closure).
-    //Variables de ruta (ej. 'name' => 'Pedro').
+    // inyecta atributos de routing a la Request (clave para ArgumentResolver)
+    $request->attributes->add($matcher->match($request->getPathInfo()));
 
-    // Guarda el nombre de la ruta ANTES de hacer unset
-    $routeName = $parameters['_route'];
+    // resuelve callable del controlador (p.ej. [HelloController, 'hello'])
+    $controller = $controllerResolver->getController($request);
 
-    // Copia para argumentos del controlador
-    $args = $parameters;
+    // resuelve argumentos correctos (p.ej. ($request, $name))
+    $arguments  = $argumentResolver->getArguments($request, $controller);
 
-    // 5) Resolver controlador y argumentos
-    $controller = $args['_controller'];//$controller: extraés el controlador (closure).
-    unset($args['_controller'], $args['_route']);//Limpiás '_controller' y '_route' del array, así te quedan solo variables (ej. ['name' => 'Pedro']).
-
-    // Inyectamos la Request como primer argumento, seguido de las variables de ruta
-    $responseContent = $controller($request, ...array_values($args));//Ejecutás el controlador pasándole:
-    /*$request primero (para que lo tenga a mano),y las variables de ruta en orden (spread operator ...).
-    $responseContent será lo que devuelva el controlador:
-    En nuestro caso, un string, p. ej. "Hello Pedro".*/
-
-    // 7) Crear respuesta Twig
-    $loader = new FilesystemLoader(__DIR__ . '/../template');  // Cargar plantillas desde 'templates/'
-    $twig = new Environment($loader);
-
-    if ($routeName === 'home') {
-        // No necesita variables
-        $html = $twig->render('home.twig', [
-            'message' => 'Welcome to Mini Symfony!',
-        ]);
-    } elseif ($routeName === 'hello') {
-        // Usa la variable de ruta 'name' (sigue viva en $parameters/$args original)
-        $name = $parameters['name'] ?? 'World';
-        $html = $twig->render('home.twig', [
-            'message' => 'Hello ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
-        ]);
-    } else {
-        // Fallback: si no renderizamos con Twig, usa lo que devolvió el controlador
-        $html = (string) $responseContent;
+    $response = call_user_func_array($controller, $arguments);
+    if (!$response instanceof Response) {
+        $response = new Response((string) $response);
     }
-   // 8) Normalizar a Response
-    $response = $responseContent instanceof Response
-        ? $responseContent
-        : new Response($html);
 } catch (ResourceNotFoundException $e) {
-    $response = new Response('Not Found', 404);//404: si no hubo match de ruta.
-} catch (Exception $e) {
-    $response = new Response('Error: '.$e->getMessage(), 500);//500: cualquier otra excepción (te ayuda a no “romper” la app).
+    $response = new Response('Not Found', 404);
+} catch (\Throwable $e) {
+    $response = new Response('Error: '.$e->getMessage(), 500);
 }
 
 
