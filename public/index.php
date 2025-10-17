@@ -8,6 +8,8 @@ use Symfony\Component\HttpFoundation\Response;//Request/Response (HttpFoundation
 use Symfony\Component\Routing\RequestContext;//RequestContext (info de la request para el router: método, host, esquema, path).
 use Symfony\Component\Routing\Matcher\UrlMatcher;//UrlMatcher (el que matchea la URL contra la RouteCollection)
 use Symfony\Component\Routing\Exception\ResourceNotFoundException; // opcional: para usar el nombre corto en el catch
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;//para cargar las plantillas desde la carpeta templates/, y Environment para configurar Twig.
 
 
 //1) Construye la Request a partir de las superglobales PHP
@@ -33,26 +35,46 @@ try {
     //'_controller': el controlador que definiste (closure).
     //Variables de ruta (ej. 'name' => 'Pedro').
 
+    // Guarda el nombre de la ruta ANTES de hacer unset
+    $routeName = $parameters['_route'];
+
+    // Copia para argumentos del controlador
+    $args = $parameters;
+
     // 5) Resolver controlador y argumentos
-    $controller = $parameters['_controller'];//$controller: extraés el controlador (closure).
-    unset($parameters['_controller'], $parameters['_route']);//Limpiás '_controller' y '_route' del array, así te quedan solo variables (ej. ['name' => 'Pedro']).
+    $controller = $args['_controller'];//$controller: extraés el controlador (closure).
+    unset($args['_controller'], $args['_route']);//Limpiás '_controller' y '_route' del array, así te quedan solo variables (ej. ['name' => 'Pedro']).
 
     // Inyectamos la Request como primer argumento, seguido de las variables de ruta
-    $responseContent = $controller($request, ...array_values($parameters));//Ejecutás el controlador pasándole:
+    $responseContent = $controller($request, ...array_values($args));//Ejecutás el controlador pasándole:
     /*$request primero (para que lo tenga a mano),y las variables de ruta en orden (spread operator ...).
     $responseContent será lo que devuelva el controlador:
     En nuestro caso, un string, p. ej. "Hello Pedro".*/
 
-    
+    // 7) Crear respuesta Twig
+    $loader = new FilesystemLoader(__DIR__ . '/../template');  // Cargar plantillas desde 'templates/'
+    $twig = new Environment($loader);
 
-    // 8) Crear Response
-    $response = new Response($responseContent);
-    // 6) Normalizamos a Response
-    $response = $responseContent instanceof Response //Si el controlador devolviera ya un Response, lo usamos directo.Como devolvemos strings, los envolvemos en new Response('…').
-    ? $responseContent
-    : new Response((string) $responseContent);
-
-} catch (Symfony\Component\Routing\Exception\ResourceNotFoundException $e) {
+    if ($routeName === 'home') {
+        // No necesita variables
+        $html = $twig->render('home.twig', [
+            'message' => 'Welcome to Mini Symfony!',
+        ]);
+    } elseif ($routeName === 'hello') {
+        // Usa la variable de ruta 'name' (sigue viva en $parameters/$args original)
+        $name = $parameters['name'] ?? 'World';
+        $html = $twig->render('home.twig', [
+            'message' => 'Hello ' . htmlspecialchars($name, ENT_QUOTES, 'UTF-8'),
+        ]);
+    } else {
+        // Fallback: si no renderizamos con Twig, usa lo que devolvió el controlador
+        $html = (string) $responseContent;
+    }
+   // 8) Normalizar a Response
+    $response = $responseContent instanceof Response
+        ? $responseContent
+        : new Response($html);
+} catch (ResourceNotFoundException $e) {
     $response = new Response('Not Found', 404);//404: si no hubo match de ruta.
 } catch (Exception $e) {
     $response = new Response('Error: '.$e->getMessage(), 500);//500: cualquier otra excepción (te ayuda a no “romper” la app).

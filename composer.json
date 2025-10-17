@@ -2,6 +2,8 @@
     "require": {
         "symfony/http-foundation": "^7.3",
         "symfony/routing": "^7.3",
-        "symfony/twig-pack": "^1.0"
+        "symfony/twig-pack": "^1.0",
+        "twig/twig": "^3.21",
+        "symfony/http-kernel": "^7.3"
     }
 }
