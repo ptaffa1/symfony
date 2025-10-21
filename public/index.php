@@ -7,10 +7,10 @@ use Symfony\Component\HttpFoundation\Request;//importa las clases (namespace)
 use Symfony\Component\HttpFoundation\Response;//Request/Response (HttpFoundation)
 use Symfony\Component\Routing\RequestContext;//RequestContext (info de la request para el router: método, host, esquema, path).
 use Symfony\Component\Routing\Matcher\UrlMatcher;//UrlMatcher (el que matchea la URL contra la RouteCollection)
-use Symfony\Component\Routing\Exception\ResourceNotFoundException; // opcional: para usar el nombre corto en el catch
-use Symfony\Component\HttpKernel\Controller\ControllerResolver;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException; // opcional: para usar el nombre corto en el catch 
+use Symfony\Component\HttpKernel\Controller\ControllerResolver;//Resuelven el controlador y sus parámetros automáticamente.
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
-
+use App\Framework\Container;
 
 //1) Construye la Request a partir de las superglobales PHP
 $request = Request::createFromGlobals(); // o sea convierte $_GET, $_POST, $_SERVER, etc. en un objeto Request.
@@ -53,3 +53,8 @@ try {
 
 
 $response->send();//Envía headers + body al navegador.Acá termina el ciclo Request → Routing → Controller → Response.
+
+//El index es el punto de entrada donde se recibe la solicitud, se procesan rutas y se resuelve el controlador adecuado
+
+//Resuelve el controlador usando los resolvers (ControllerResolver y ArgumentResolver).
+//Gestion de Errores. Si una ruta no se encuentra, se devuelve un 404, y si hay errores, se maneja con un 500
