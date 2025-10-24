@@ -58,3 +58,12 @@ $response->send();//Envía headers + body al navegador.Acá termina el ciclo Req
 
 //Resuelve el controlador usando los resolvers (ControllerResolver y ArgumentResolver).
 //Gestion de Errores. Si una ruta no se encuentra, se devuelve un 404, y si hay errores, se maneja con un 500
+
+
+/**Flujo completo
+
+Request → Routing → Controller: El Framework maneja la solicitud, el UrlMatcher busca la ruta, el ControllerResolver encuentra el controlador y el ArgumentResolver pasa los parámetros correctos.
+
+Controller → Model: En LeapYearController, el modelo LeapYear es responsable de la lógica de negocios.
+
+Response → Render → Send: Se devuelve una Response con el resultado, y se envía al navegador. */

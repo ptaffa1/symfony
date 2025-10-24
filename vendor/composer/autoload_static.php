@@ -48,6 +48,7 @@ class ComposerStaticInitefde9833fcaa12ff1811e00a7a077255
             'Symfony\\Bundle\\TwigBundle\\' => 26,
             'Symfony\\Bundle\\FrameworkBundle\\' => 31,
             'Symfony\\Bridge\\Twig\\' => 20,
+            'Simplex\\' => 8,
         ),
         'P' => 
         array (
@@ -55,6 +56,10 @@ class ComposerStaticInitefde9833fcaa12ff1811e00a7a077255
             'Psr\\EventDispatcher\\' => 20,
             'Psr\\Container\\' => 14,
             'Psr\\Cache\\' => 10,
+        ),
+        'C' => 
+        array (
+            'Calendar\\' => 9,
         ),
         'A' => 
         array (
@@ -159,6 +164,10 @@ class ComposerStaticInitefde9833fcaa12ff1811e00a7a077255
         array (
             0 => __DIR__ . '/..' . '/symfony/twig-bridge',
         ),
+        'Simplex\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src/Simplex',
+        ),
         'Psr\\Log\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/log/src',
@@ -174,6 +183,10 @@ class ComposerStaticInitefde9833fcaa12ff1811e00a7a077255
         'Psr\\Cache\\' => 
         array (
             0 => __DIR__ . '/..' . '/psr/cache/src',
+        ),
+        'Calendar\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/src/Calendar',
         ),
         'App\\' => 
         array (
