@@ -1,25 +1,23 @@
 <?php
 use Symfony\Component\Routing\Route;
 use Symfony\Component\Routing\RouteCollection;
+use Symfony\Component\HttpFoundation\Response;
+//Importa las clases de routing y (opcionalmente) Response si usás closures.
 
-$routes = new RouteCollection();
+$routes = new RouteCollection();//Estructura que almacenará todas las rutas.
 
-// Ruta a la página principal
 $routes->add('home', new Route('/', [
-    '_controller' => 'Calendar\\Controller\\LeapYearController::index',
+    '_controller' => function () { return new Response('Welcome to Mini Symfony!'); },
 ]));
+//Ruta home (/).El _controller aquí es una closure que devuelve un Response (útil para páginas simples o pruebas).
 
-// Ruta para el cálculo de año bisiesto
-$routes->add('is_leap_year', new Route('/is_leap_year/{year}', [
-    'year' => null,
-    '_controller' => 'Calendar\\Controller\\LeapYearController::index',
-]));
 
+
+$routes->add('leap_year', new Route(
+    '/is_leap_year/{year}',
+    ['_controller' => 'Calendar\\Controller\\LeapYearController::index'],
+    ['year' => '\d+'] // opcional
+));
+//Ruta con parámetro dinámico {year}. Apunta al método index() de tu LeapYearController.
 return $routes;
-//Las rutas se definen como siempre, pero ahora estamos utilizando un namespace Calendar para nuestra aplicación.
-
-/*$routes->add(): Define las rutas. Aquí agregamos dos rutas: 
-home: Ruta principal / que llama a LeapYearController::index.
-is_leap_year: Ruta /is_leap_year/{year} que llama a LeapYearController::index y pasa el parámetro year.
-
-'_controller': Especifica qué controlador y método deben ejecutarse cuando se solicita la ruta. */
+//Devuelve la colección a index.php.

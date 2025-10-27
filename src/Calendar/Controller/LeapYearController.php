@@ -1,21 +1,18 @@
 <?php
-namespace Calendar\Controller;
+namespace Calendar\Controller;//Namespace del  app.
 
 use Calendar\Model\LeapYear;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-
-class LeapYearController
+//Importa el modelo y Request/Response.
+final class LeapYearController
 {
-    public function index(Request $request, int $year): Response //index(): Método que recibe un parámetro year y usa la clase LeapYear para calcular si el año es bisiesto. Si es bisiesto, devuelve una respuesta positiva, y si no, una negativa.
+    public function index(Request $request, int $year): Response  //Acción index. El ArgumentResolver inyecta Request y convierte year a int.
     {
-        $leapYear = new LeapYear();
-        if ($leapYear->isLeapYear($year)) {
-            return new Response('Si, es anio bisiesto!');
-        }
+        $ly = new LeapYear();
 
-        return new Response('Nope, no es anio bisiesto.');
+        return $ly->isLeapYear($year)
+            ? new Response('Yep, this is a leap year!')
+            : new Response('Nope, this is not a leap year.');//Devuelve un Response en función de la lógica del modelo.
     }
-}
-//Este controlador recibe el parámetro year de la URL, y pasa la información a la clase LeapYear para determinar si es un año bisiesto.
-//Este es un controlador básico que maneja la lógica de la aplicación, en este caso, el cálculo de años bisiestos.
+}//nstancia el modelo que sabe chequear años bisiestos.

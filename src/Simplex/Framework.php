@@ -5,23 +5,27 @@ Podríamos haberlo llamado "MiFramework" o "FrameworkApp", pero preferimos usar 
 
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
-use Symfony\Component\HttpKernel\Controller\ControllerResolver;
-use Symfony\Component\Routing\Exception\ResourceNotFoundException;
-use Symfony\Component\Routing\Matcher\UrlMatcher;
+use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
+use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
+use Symfony\Component\Routing\Exception\ResourceNotFoundException;//Importás ResourceNotFoundException para mapear 404.
+use Symfony\Component\Routing\Matcher\UrlMatcherInterface;
+//Dependés de interfaces (clave para tests con mocks)
+
+
 /*Esta clase es el corazón de la separación de responsabilidades. La clase Framework se encarga de recibir una Request y devolver una Response.*/ 
 class Framework
 {
     public function __construct( //Constructores: El constructor inicia las dependencias necesarias para resolver la Request
     
-        private UrlMatcher $matcher, //$matcher: Es el encargado de hacer coincidir el path de la URL con las rutas definidas.
-        private ControllerResolver $controllerResolver,//$controllerResolver: Resuelve qué controlador debe ser ejecutado.
-        private ArgumentResolver $argumentResolver,//$argumentResolver: Resuelve los argumentos del controlador (por ejemplo, el $request y las variables de la URL).
+        private UrlMatcherInterface $matcher, //$matcher: Es el encargado de hacer coincidir el path de la URL con las rutas definidas.
+        private ControllerResolverInterface $controllerResolver,//$controllerResolver: Resuelve qué controlador debe ser ejecutado.
+        private ArgumentResolverInterface $argumentResolver,//$argumentResolver: Resuelve los argumentos del controlador (por ejemplo, el $request y las variables de la URL).
     ){
     }
 
 
     /*Este es el método principal que orquesta todo el flujo de trabajo, es decir, toma la solicitud (Request), la procesa y devuelve una respuesta (Response).*/
+    // /Actualiza el contexto del matcher con los datos de la Request.
     public function handle(Request $request): Response //handle(): Este método se encarga de recibir la Request y devolver la Response. Utiliza los resolvers para encontrar el controlador y pasarle los argumentos correctos.
     {
         //CONFIGURA EL CONTEXTO DE LA SOLICITUD
@@ -46,10 +50,13 @@ class Framework
 
             //Ejecuta el controlador con los argumentos
             return call_user_func_array($controller, $arguments);
-        }catch (ResourceNotFoundException $exception) { //ResourceNotFoundException: Si no se encuentra ninguna coincidencia con la URL solicitada, se devuelve un error 404.
+            
+            return $response instanceof Response ? $response : new Response((string) $response);
+
+        }catch (ResourceNotFoundException) { //ResourceNotFoundException: Si no se encuentra ninguna coincidencia con la URL solicitada, se devuelve un error 404.
             return new Response('Not found', 404);
-        }catch(\Exception $exception) {//Exception: Cualquier otro error general se maneja devolviendo un error 500 (por ejemplo, problemas internos con el servidor).
-            return new Response('An error occurred',5000);
+        }catch(\Throwable) {//Exception: Cualquier otro error general se maneja devolviendo un error 500 (por ejemplo, problemas internos con el servidor).
+            return new Response('An error occurred',500);
         }
 
 
