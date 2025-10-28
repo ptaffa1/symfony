@@ -4,7 +4,8 @@
     "symfony/routing": "^7.3",
     "symfony/twig-pack": "^1.0",
     "twig/twig": "^3.21",
-    "symfony/http-kernel": "^7.3"
+    "symfony/http-kernel": "^7.3",
+    "symfony/event-dispatcher": "^7.3"
   },
   "autoload": {
     "psr-4": {
