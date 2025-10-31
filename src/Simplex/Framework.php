@@ -8,8 +8,8 @@ use Symfony\Component\HttpKernel\Controller\ControllerResolverInterface;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolverInterface;
 use Symfony\Component\Routing\Exception\ResourceNotFoundException;
 use Symfony\Contracts\EventDispatcher\EventDispatcherInterface;
-
-final class Framework
+use Symfony\Component\HttpKernel\HttpKernelInterface; //nuevo
+final class Framework implements HttpKernelInterface 
 {
     public function __construct(
         private EventDispatcherInterface $dispatcher,
@@ -18,9 +18,12 @@ final class Framework
         private ArgumentResolverInterface $argumentResolver,
     ) {}
 
-    public function handle(Request $request): Response
-    {
-        // Contexto de routing desde la Request
+   // Firma EXACTA de HttpKernelInterface:
+    public function handle(
+        Request $request,
+        int $type = HttpKernelInterface::MAIN_REQUEST,
+        bool $catch = true
+        ): Response {
         $this->matcher->getContext()->fromRequest($request);
 
         try {
@@ -34,9 +37,11 @@ final class Framework
             // 3) Ejecutar controlador y normalizar a Response (SIN return temprano)
             $response = \call_user_func_array($controller, $arguments);
             $response = $response instanceof Response ? $response : new Response((string) $response);
-        } catch (ResourceNotFoundException) {
+        } catch (ResourceNotFoundException $e) {
+            if (!$catch) { throw $e; }
             $response = new Response('Not Found', 404);
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            if (!$catch) { throw $e; }
             $response = new Response('An error occurred', 500);
         }
 

@@ -8,6 +8,8 @@ use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\HttpKernel\Controller\ControllerResolver;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
 use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\HttpKernel\HttpCache\HttpCache;
+use Symfony\Component\HttpKernel\HttpCache\Store;
 //Importa las clases que vamos a usar: tu Framework, la Request, el Contexto de routing, el UrlMatcher y los resolvers de controlador/argumentos.
 
 $request = Request::createFromGlobals();//Construye la Request a partir de $_SERVER, $_GET, $_POST, etc.
@@ -22,6 +24,20 @@ $argumentResolver   = new ArgumentResolver();
 $dispatcher = new EventDispatcher();
 $dispatcher->addSubscriber(new \Simplex\ContentLengthListener());
 $dispatcher->addSubscriber(new \Simplex\GoogleListener());
+
+// Tu kernel que implementa HttpKernelInterface
+$kernel = new \Simplex\Framework($dispatcher, $matcher, $controllerResolver, $argumentResolver);
+
+// Envoltorio de reverse proxy en PHP
+$kernel = new HttpCache(
+    $kernel,
+    new Store(__DIR__ . '/../cache') // asegurate que /cache exista y sea escribible
+    // , new \Symfony\Component\HttpKernel\HttpCache\Esi()          // opcional (ESI)
+    // , ['debug' => true]                                          // opcional (debug X-Symfony-Cache)
+);
+
+$response = $kernel->handle($request);
+$response->send();
 
 // Y al instanciar tu Framework con sus dependencias., pasale el dispatcher primero:
 $framework = new \Simplex\Framework(

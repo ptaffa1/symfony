@@ -7,12 +7,21 @@ use Symfony\Component\HttpFoundation\Response;
 //Importa el modelo y Request/Response.
 final class LeapYearController
 {
-    public function index(Request $request, int $year): Response  //Acción index. El ArgumentResolver inyecta Request y convierte year a int.
-    {
-        $ly = new LeapYear();
+   public function index(Request $request, int $year): Response
+{
+    $leapYear = new \Calendar\Model\LeapYear();
 
-        return $ly->isLeapYear($year)
-            ? new Response('Yep, this is a leap year!')
-            : new Response('Nope, this is not a leap year.');//Devuelve un Response en función de la lógica del modelo.
+    if ($leapYear->isLeapYear($year)) {
+        $response = new Response('Yep, this is a leap year! ' . rand()); // rand() para verlo variar
+    } else {
+        $response = new Response('Nope, this is not a leap year. ' . rand());
     }
+
+    // cache público por 10 segundos
+    $response->setPublic();
+    $response->setTtl(10); // equivalente a setSharedMaxAge para proxies
+
+    return $response;
+}
+
 }//nstancia el modelo que sabe chequear años bisiestos.

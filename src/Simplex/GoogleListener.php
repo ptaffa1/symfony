@@ -15,7 +15,7 @@ final class GoogleListener implements EventSubscriberInterface
         ) {
             return;
         }
-
+        // POC: agregar texto. En real, insertarías el <script> antes de </body>
         $response->setContent($response->getContent().'GA CODE');
     }
 
