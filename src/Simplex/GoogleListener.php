@@ -2,13 +2,15 @@
 namespace Simplex;
 
 use Symfony\Component\EventDispatcher\EventSubscriberInterface;
+use Symfony\Component\HttpKernel\Event\ResponseEvent;
+use Symfony\Component\HttpKernel\KernelEvents;  
 
 final class GoogleListener implements EventSubscriberInterface
 {
     public function onResponse(ResponseEvent $event): void
     {
         $response = $event->getResponse();
-
+        $request = $event->getRequest();
         if ($response->isRedirection()
             || ($response->headers->has('Content-Type') && !str_contains((string) $response->headers->get('Content-Type'), 'html'))
             || 'html' !== $event->getRequest()->getRequestFormat()
@@ -22,6 +24,6 @@ final class GoogleListener implements EventSubscriberInterface
     public static function getSubscribedEvents(): array
     {
         // Suscripción por CLASE (coincide con el dispatch anterior)
-        return [ ResponseEvent::class => 'onResponse' ];
+        return [KernelEvents::RESPONSE => 'onResponse'];
     }
 }

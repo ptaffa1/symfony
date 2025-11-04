@@ -1,51 +1,54 @@
 <?php
-require __DIR__ . '/../vendor/autoload.php'; //Carga el autoloader de Composer. Sin esto no existen las clases (Request, UrlMatcher, tus namespaces, etc.).
+require __DIR__ . '/../vendor/autoload.php';
 
-use Simplex\Framework;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\RequestStack;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 use Symfony\Component\Routing\RequestContext;
 use Symfony\Component\Routing\Matcher\UrlMatcher;
 use Symfony\Component\HttpKernel\Controller\ControllerResolver;
 use Symfony\Component\HttpKernel\Controller\ArgumentResolver;
-use Symfony\Component\EventDispatcher\EventDispatcher;
+use Symfony\Component\HttpKernel\EventListener\RouterListener;
+use Symfony\Component\HttpKernel\EventListener\ResponseListener;
+use Symfony\Component\HttpKernel\EventListener\ErrorListener;
 use Symfony\Component\HttpKernel\HttpCache\HttpCache;
 use Symfony\Component\HttpKernel\HttpCache\Store;
-//Importa las clases que vamos a usar: tu Framework, la Request, el Contexto de routing, el UrlMatcher y los resolvers de controlador/argumentos.
 
-$request = Request::createFromGlobals();//Construye la Request a partir de $_SERVER, $_GET, $_POST, etc.
-$routes  = require __DIR__ . '/../src/app.php';//Carga la RouteCollection que definiste en src/app.php
+// 1) Request
+$request = Request::createFromGlobals();
 
+// 2) Rutas (usa UNA sola fuente: src/app.php o config/routes.php)
+$routes = require __DIR__ . '/../src/app.php'; // o '../config/routes.php'
+
+// 3) Infra de routing
 $context = new RequestContext();
+$context->fromRequest($request);
 $matcher = new UrlMatcher($routes, $context);
-$controllerResolver = new ControllerResolver();
-$argumentResolver   = new ArgumentResolver();
-//Prepara el contexto (método, host, esquema, path, …), el matcher de rutas y los resolvers para determinar el controlador y sus parámetros.
+$requestStack = new RequestStack();
 
+// 4) Dispatcher + listeners core
 $dispatcher = new EventDispatcher();
+$dispatcher->addSubscriber(new RouterListener($matcher, $requestStack));
+$dispatcher->addSubscriber(new ResponseListener('UTF-8'));
+$dispatcher->addSubscriber(new ErrorListener('Calendar\\Controller\\ErrorController::exception'));
+
+// 5) Tus subscribers (módulo 6) + (opcional) módulo 8
 $dispatcher->addSubscriber(new \Simplex\ContentLengthListener());
 $dispatcher->addSubscriber(new \Simplex\GoogleListener());
+$dispatcher->addSubscriber(new \Simplex\StringResponseListener()); // si lo creaste
+$dispatcher->addSubscriber(new \Simplex\CachingListener());
 
-// Tu kernel que implementa HttpKernelInterface
-$kernel = new \Simplex\Framework($dispatcher, $matcher, $controllerResolver, $argumentResolver);
 
-// Envoltorio de reverse proxy en PHP
-$kernel = new HttpCache(
-    $kernel,
-    new Store(__DIR__ . '/../cache') // asegurate que /cache exista y sea escribible
-    // , new \Symfony\Component\HttpKernel\HttpCache\Esi()          // opcional (ESI)
-    // , ['debug' => true]                                          // opcional (debug X-Symfony-Cache)
+
+
+// 6) Resolvers
+$controllerResolver = new ControllerResolver();
+$argumentResolver   = new ArgumentResolver();
+
+$kernel = new \Simplex\Framework($dispatcher, $controllerResolver, $requestStack, $argumentResolver);
+$kernel = new \Symfony\Component\HttpKernel\HttpCache\HttpCache(
+  $kernel,
+  new \Symfony\Component\HttpKernel\HttpCache\Store(__DIR__.'/../cache')
+  // , new \Symfony\Component\HttpKernel\HttpCache\Esi()
+  // , ['debug'=>true]
 );
-
-$response = $kernel->handle($request);
-$response->send();
-
-// Y al instanciar tu Framework con sus dependencias., pasale el dispatcher primero:
-$framework = new \Simplex\Framework(
-    $dispatcher,
-    $matcher,
-    $controllerResolver,
-    $argumentResolver
-);
-
-$framework->handle($request)->send();
-//Orquesta: handle() procesa la request y devuelve una Response, que se envía al navegador con send().
